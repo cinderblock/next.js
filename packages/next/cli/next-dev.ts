@@ -14,11 +14,13 @@ const nextDev: cliCommand = (argv) => {
     '--help': Boolean,
     '--port': Number,
     '--hostname': String,
+    '--socket': String,
 
     // Aliases
     '-h': '--help',
     '-p': '--port',
     '-H': '--hostname',
+    '-S': '--socket',
   }
   let args: arg.Result<arg.Spec>
   try {
@@ -44,6 +46,7 @@ const nextDev: cliCommand = (argv) => {
       Options
         --port, -p      A port number on which to start the application
         --hostname, -H  Hostname on which to start the application
+        --socket, -S    Unix socket path to listen on
         --help, -h      Displays this message
     `)
     process.exit(0)
@@ -106,15 +109,17 @@ const nextDev: cliCommand = (argv) => {
   }
 
   const port = args['--port'] || 3000
-  const appUrl = `http://${args['--hostname'] || 'localhost'}:${port}`
+  const hostname = args['--hostname']
+  const socket = args['--socket']
 
   startServer(
     { dir, dev: true, isNextDevCommand: true },
-    port,
-    args['--hostname']
+    ...(socket ? [socket] : [port, hostname])
   )
     .then(async (app) => {
-      startedDevelopmentServer(appUrl)
+      startedDevelopmentServer(
+        socket ? null : `http://${hostname || 'localhost'}:${port}`
+      )
       // Start preflight after server is listening and ignore errors:
       preflight().catch(() => {})
       // Finalize server bootup:
